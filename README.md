@@ -65,3 +65,4 @@ npm run preview
 - Perfil do especialista (CRM, experiência, agenda completa).
 - Filtros avançados por convênio/planos e preço.
 # Publico
+# Publico
