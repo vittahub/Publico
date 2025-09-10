@@ -130,21 +130,21 @@ const Navbar = ({ isForClinics = false }) => {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-lg border-b border-gray-200"
     >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
-          <div className="flex items-center space-x-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 sm:h-20">
+          <div className="flex items-center space-x-4 sm:space-x-6 lg:space-x-8">
             {isForClinics ? (
               <div className="flex items-center space-x-2">
                 <img
                   src={VittaHubLogo}
                   alt="VittaHub Logo"
-                  className="w-8 h-8"
+                  className="w-6 h-6 sm:w-8 sm:h-8"
                 />
                 <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">
+                  <span className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">
                     VittaHub
                   </span>
-                  <span className="text-sm font-normal text-gray-500 ml-1">
+                  <span className="text-xs sm:text-sm font-normal text-gray-500 ml-1 hidden sm:inline">
                     | Para Clínicas
                   </span>
                 </div>
@@ -154,25 +154,27 @@ const Navbar = ({ isForClinics = false }) => {
                 <img
                   src={VittaHubLogo}
                   alt="VittaHub Logo"
-                  className="w-8 h-8"
+                  className="w-6 h-6 sm:w-8 sm:h-8"
                 />
-                <span className="text-2xl font-bold text-gray-800">
+                <span className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">
                   VittaHub
                 </span>
               </NavLink>
             )}
             {/* Localização apenas para pacientes */}
             {!isForClinics && currentLocation && (
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <MapPin className="w-4 h-4 text-teal-600" />
-                <span className="font-medium">{currentLocation}</span>
+              <div className="hidden sm:flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
+                <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-teal-600" />
+                <span className="font-medium truncate max-w-[120px] lg:max-w-none">
+                  {currentLocation}
+                </span>
               </div>
             )}
           </div>
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden sm:flex items-center space-x-2 lg:space-x-3">
             {isLoggedIn ? (
               <>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="hidden lg:flex items-center space-x-2 text-sm text-gray-600">
                   <span className="font-medium">
                     Olá,{" "}
                     {userData?.name || (isForClinics ? "Clínica" : "Paciente")}
@@ -180,7 +182,8 @@ const Navbar = ({ isForClinics = false }) => {
                 </div>
                 <Button
                   variant="ghost"
-                  className="font-semibold text-red-600 hover:text-red-700 hover:bg-red-50"
+                  size="sm"
+                  className="font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm"
                   onClick={handleLogout}
                 >
                   Sair
@@ -190,21 +193,43 @@ const Navbar = ({ isForClinics = false }) => {
               <>
                 <Button
                   variant="ghost"
-                  className="font-semibold text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                  size="sm"
+                  className="font-semibold text-teal-600 hover:text-teal-700 hover:bg-teal-50 text-xs sm:text-sm"
                   onClick={() => handleAuthAction("Login")}
                 >
-                  <LogIn className="w-4 h-4 mr-2" />
-                  {isForClinics ? "Entrar como Clínica" : "Entrar"}
+                  <LogIn className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {isForClinics ? "Entrar como Clínica" : "Entrar"}
+                  </span>
+                  <span className="sm:hidden">Entrar</span>
                 </Button>
                 <Button
-                  className="font-semibold"
+                  size="sm"
+                  className="font-semibold text-xs sm:text-sm px-3 sm:px-4"
                   onClick={() => handleAuthAction("Cadastro")}
                 >
-                  {isForClinics ? "Cadastrar Clínica" : "Cadastre-se grátis"}
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <span className="hidden sm:inline">
+                    {isForClinics ? "Cadastrar Clínica" : "Cadastre-se grátis"}
+                  </span>
+                  <span className="sm:hidden">
+                    {isForClinics ? "Cadastrar" : "Cadastrar"}
+                  </span>
+                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                 </Button>
               </>
             )}
+          </div>
+
+          {/* Menu mobile */}
+          <div className="sm:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+              onClick={() => handleAuthAction("Login")}
+            >
+              <LogIn className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>

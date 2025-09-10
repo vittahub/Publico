@@ -471,13 +471,21 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
   };
 
   const handleGetCurrentLocation = async () => {
+    console.log("handleGetCurrentLocation chamado");
+    console.log("gpsLocation:", gpsLocation);
+    console.log("gpsLoading:", gpsLoading);
+    console.log("gpsError:", gpsError);
+
     if (gpsLocation) {
+      console.log("Usando localização existente:", gpsLocation);
       const address = await getAddressFromCoords(
         gpsLocation.latitude,
         gpsLocation.longitude
       );
+      console.log("Endereço obtido:", address);
       setLocation(address);
     } else {
+      console.log("Obtendo nova localização...");
       getCurrentLocation();
     }
   };
@@ -561,6 +569,7 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
   useEffect(() => {
     const getGpsCity = async () => {
       if (gpsLocation) {
+        console.log("Obtendo cidade do GPS:", gpsLocation);
         try {
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${gpsLocation.latitude}&lon=${gpsLocation.longitude}&addressdetails=1`,
@@ -569,6 +578,7 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
             }
           );
           const data = await response.json();
+          console.log("Dados do Nominatim:", data);
 
           const city =
             data?.address?.city ||
@@ -581,6 +591,9 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
             data?.address?.county ||
             "";
 
+          console.log("Cidade extraída:", city);
+          console.log("Estado extraído:", state);
+
           setGpsCity(city);
           setGpsState(state);
 
@@ -588,7 +601,9 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
           if (!location && city && state) {
             // Converter nome completo do estado para abreviação
             const stateAbbreviation = getStateAbbreviation(state);
-            setLocation(`${city} - ${stateAbbreviation}`);
+            const gpsLabel = `${city} - ${stateAbbreviation}`;
+            console.log("Definindo localização inicial:", gpsLabel);
+            setLocation(gpsLabel);
           }
         } catch (error) {
           console.error("Erro ao obter cidade do GPS:", error);
@@ -609,10 +624,10 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
-        className="mt-10 p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg max-w-3xl mx-auto relative z-30"
+        className="mt-6 sm:mt-8 md:mt-10 p-3 sm:p-4 bg-white/90 backdrop-blur-sm rounded-2xl sm:rounded-full shadow-lg max-w-3xl mx-auto relative z-30"
         data-search-bar
       >
-        <div className="flex flex-col md:flex-row items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
           <div className="relative flex-[2] w-full">
             <Input
               placeholder="Especialidade ou nome da clínica"
@@ -659,12 +674,12 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
                   setIsClinicDropdownOpen(true);
                 }
               }}
-              className="pl-4 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 h-12 text-base w-full placeholder:text-gray-400 placeholder:font-medium"
+              className="pl-4 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 h-10 sm:h-12 text-sm sm:text-base w-full placeholder:text-gray-400 placeholder:font-medium"
             />
 
             {/* Dropdown de sugestões de clínicas */}
             {isClinicDropdownOpen && clinicSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[999997] max-h-[280px] overflow-y-auto min-w-[500px] w-full">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[999997] max-h-[280px] overflow-y-auto w-full sm:min-w-[500px]">
                 <div className="py-2">
                   {clinicSuggestions.map((clinic, idx) => (
                     <button
@@ -676,18 +691,18 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
                         handleClinicSelect(clinic);
                       }}
                       onMouseEnter={() => setClinicHighlightedIdx(idx)}
-                      className={`w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors duration-150 ${
+                      className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-4 text-left hover:bg-gray-50 transition-colors duration-150 ${
                         clinicHighlightedIdx === idx ? "bg-gray-50" : ""
                       }`}
                     >
                       <div className="flex-shrink-0">
-                        <MapPin className="w-5 h-5 text-gray-400" />
+                        <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">
+                        <div className="font-medium text-sm sm:text-base text-gray-900 truncate">
                           {clinic.name}
                         </div>
-                        <div className="text-sm text-gray-500 truncate">
+                        <div className="text-xs sm:text-sm text-gray-500 truncate">
                           {clinic.specialty} • {clinic.city} - {clinic.state}
                         </div>
                         {clinic.address && (
@@ -698,8 +713,10 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
                         )}
                       </div>
                       <div className="flex-shrink-0 flex items-center gap-1">
-                        <span className="text-yellow-400">★</span>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-yellow-400 text-sm sm:text-base">
+                          ★
+                        </span>
+                        <span className="text-xs sm:text-sm text-gray-600">
                           {clinic.rating}
                         </span>
                       </div>
@@ -738,10 +755,10 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
               )}
           </div>
 
-          <div className="w-full md:w-px h-px md:h-6 bg-gray-200"></div>
+          <div className="w-full sm:w-px h-px sm:h-6 bg-gray-200"></div>
 
           <div className="relative flex-1 w-full z-40">
-            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-teal-600 w-5 h-5" />
+            <MapPin className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-teal-600 w-4 h-4 sm:w-5 sm:h-5" />
             <button
               type="button"
               onClick={() => {
@@ -750,17 +767,17 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
                 setClinicHighlightedIdx(-1);
                 setIsLocationModalOpen((v) => !v);
               }}
-              className="w-full text-left pl-12 pr-4 py-3 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:border-none h-12 text-base placeholder:text-gray-400 placeholder:font-medium location-button"
+              className="w-full text-left pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-3 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:border-none h-10 sm:h-12 text-sm sm:text-base placeholder:text-gray-400 placeholder:font-medium location-button"
             >
               {gpsLoading
                 ? "Obtendo localização..."
-                : location || "Perto de você"}
+                : location || "Selecionar localização"}
             </button>
 
             {/* Modal de seleção de cidade */}
             {isLocationModalOpen && (
               <div
-                className="absolute bg-white border border-gray-200 rounded-xl shadow-xl z-[999999] p-3 min-w-[320px] search-modal"
+                className="absolute bg-white border border-gray-200 rounded-xl shadow-xl z-[999999] p-3 w-full sm:min-w-[320px] search-modal"
                 style={{
                   position: "absolute",
                   zIndex: 99999999,
@@ -820,12 +837,24 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
                   {/* Cidade do GPS */}
                   <button
                     type="button"
-                    onClick={() => {
-                      const gpsLabel =
-                        gpsCity && gpsState
-                          ? `${gpsCity} - ${getStateAbbreviation(gpsState)}`
-                          : "Perto de você";
-                      setLocation(gpsLabel);
+                    onClick={async () => {
+                      console.log("Botão GPS clicado");
+                      // Limpar localização selecionada manualmente
+                      localStorage.removeItem("selectedLocation");
+
+                      // Se já temos localização GPS, usar ela
+                      if (gpsCity && gpsState) {
+                        const gpsLabel = `${gpsCity} - ${getStateAbbreviation(
+                          gpsState
+                        )}`;
+                        console.log("Usando GPS existente:", gpsLabel);
+                        setLocation(gpsLabel);
+                      } else {
+                        // Tentar obter localização GPS
+                        console.log("Obtendo nova localização GPS...");
+                        await handleGetCurrentLocation();
+                      }
+
                       setIsLocationModalOpen(false);
                       setLocationSearchQuery("");
                     }}
@@ -836,7 +865,7 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
                       <span className="text-sm">
                         {gpsCity && gpsState
                           ? `${gpsCity} - ${getStateAbbreviation(gpsState)}`
-                          : "Perto de você"}
+                          : "Usar minha localização"}
                       </span>
                     </div>
                     <span className="text-[10px] uppercase text-teal-600 font-semibold">
@@ -892,11 +921,11 @@ const SearchBar = ({ onSearch, initialLocation = "", onLocationChange }) => {
           <Button
             type="submit"
             size="lg"
-            className="rounded-full w-full md:w-auto"
+            className="rounded-full w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6"
             onClick={handleSearchButtonClick}
           >
-            <Search className="w-5 h-5 md:hidden mr-2" />
-            Buscar
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 sm:hidden mr-2" />
+            <span className="text-sm sm:text-base">Buscar</span>
           </Button>
         </div>
       </motion.form>

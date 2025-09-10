@@ -10,13 +10,13 @@ import {
   Heart,
   Brain,
   Bone,
-  Outdent as Tooth,
   Eye,
   Search,
   Calendar,
   CheckCircle,
   Star,
   MessageCircle,
+  Smile,
 } from "lucide-react";
 
 const SpecialtyCard = ({ icon, name, delay }) => {
@@ -88,7 +88,7 @@ const HomePage = ({
     { icon: <Heart className="w-8 h-8" />, name: "Cardiologia" },
     { icon: <Brain className="w-8 h-8" />, name: "Psicologia" },
     { icon: <Bone className="w-8 h-8" />, name: "Ortopedia" },
-    { icon: <Tooth className="w-8 h-8" />, name: "Odontologia" },
+    { icon: <Smile className="w-8 h-8" />, name: "Odontologia" },
     { icon: <Eye className="w-8 h-8" />, name: "Oftalmologia" },
   ];
 
@@ -100,6 +100,19 @@ const HomePage = ({
       ? localStorage.getItem("selectedLocation") || null
       : null
   );
+
+  // Função para atualizar a região selecionada e persistir no localStorage
+  const handleLocationChange = (location) => {
+    setSelectedRegion(location);
+    if (typeof window !== "undefined") {
+      if (location && location.trim() !== "") {
+        localStorage.setItem("selectedLocation", location);
+      } else {
+        localStorage.removeItem("selectedLocation");
+        setSelectedRegion(null); // Limpar seleção manual
+      }
+    }
+  };
 
   // Determina cidade/estado a partir da geolocalização, com fallback
   const [userRegion, setUserRegion] = React.useState(null);
@@ -116,45 +129,140 @@ const HomePage = ({
     resolveRegion();
   }, [location, selectedRegion]);
 
+  // Auto-definir localização do GPS se não há seleção manual
+  React.useEffect(() => {
+    if (!selectedRegion && userRegion && typeof window !== "undefined") {
+      // Não salvar no localStorage, apenas usar para exibição
+      console.log("Usando localização do GPS:", userRegion);
+    }
+  }, [selectedRegion, userRegion]);
+
   const parseCityState = (label) => {
     if (!label || typeof label !== "string") return { city: "", state: "" };
-    let tail = label;
-    const lastDash = label.lastIndexOf(" - ");
-    if (lastDash !== -1) tail = label.slice(lastDash + 3);
-    let city = tail.trim();
-    let state = "";
-    if (tail.includes(",")) {
-      const parts = tail.split(",");
-      city = parts[0].trim();
-      state = parts[1]?.trim() || "";
-    } else if (tail.includes(" - ")) {
-      const parts = tail.split(" - ");
-      city = parts[0].trim();
-      state = parts[1]?.trim() || "";
+
+    // Remove espaços extras
+    const cleanLabel = label.trim();
+
+    // Padrões comuns de endereços brasileiros
+    const patterns = [
+      // "São Paulo - SP", "Rio de Janeiro - RJ"
+      /^([^-]+)\s*-\s*([A-Z]{2})$/i,
+      // "São Paulo, SP", "Rio de Janeiro, RJ"
+      /^([^,]+),\s*([A-Z]{2})$/i,
+      // "Copacabana - Rio de Janeiro, RJ"
+      /^([^-]+)\s*-\s*([^,]+),\s*([A-Z]{2})$/i,
+      // "Av. Paulista, 1000 - São Paulo, SP"
+      /^[^-]+-\s*([^,]+),\s*([A-Z]{2})$/i,
+    ];
+
+    for (const pattern of patterns) {
+      const match = cleanLabel.match(pattern);
+      if (match) {
+        if (match.length === 3) {
+          // Padrão simples: cidade - estado
+          return {
+            city: match[1].trim(),
+            state: match[2].trim().toUpperCase(),
+          };
+        } else if (match.length === 4) {
+          // Padrão com bairro: bairro - cidade, estado
+          return {
+            city: match[2].trim(),
+            state: match[3].trim().toUpperCase(),
+          };
+        }
+      }
     }
-    return { city, state };
+
+    // Fallback: tentar extrair cidade e estado do final
+    const parts = cleanLabel.split(/[-,]/);
+    if (parts.length >= 2) {
+      const city = parts[parts.length - 2]?.trim() || "";
+      const state = parts[parts.length - 1]?.trim().toUpperCase() || "";
+      return { city, state };
+    }
+
+    return { city: "", state: "" };
   };
 
   const regionLabel = selectedRegion || userRegion;
   const { city: regionCity, state: regionState } = parseCityState(regionLabel);
 
-  const topNearby = [...allClinics]
-    .filter((c) => {
-      if (!regionCity) return true; // se não souber a cidade, mostra geral
+  const topNearby = React.useMemo(() => {
+    // Se não há região selecionada, mostra todas as clínicas ordenadas por rating
+    if (!regionCity) {
+      return [...allClinics].sort((a, b) => b.rating - a.rating).slice(0, 4);
+    }
+
+    // Filtra clínicas por região
+    const filteredClinics = [...allClinics].filter((c) => {
       const { city: clinicCity, state: clinicState } = parseCityState(
         c.address
       );
-      if (
-        clinicCity === regionCity &&
-        (!regionState || clinicState === regionState)
-      ) {
+
+      // Prioriza clínicas da mesma cidade
+      if (clinicCity.toLowerCase() === regionCity.toLowerCase()) {
         return true;
       }
-      // cidades vizinhas: prioriza mesmo estado
-      return regionState && clinicState === regionState;
-    })
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, 4);
+
+      // Se não há clínicas na mesma cidade, mostra do mesmo estado
+      if (regionState && clinicState === regionState) {
+        return true;
+      }
+
+      return false;
+    });
+
+    // Se não encontrou clínicas na região, mostra as melhores avaliadas
+    if (filteredClinics.length === 0) {
+      return [...allClinics].sort((a, b) => b.rating - a.rating).slice(0, 4);
+    }
+
+    // Ordena: mesma cidade primeiro, depois por rating
+    return filteredClinics
+      .sort((a, b) => {
+        const { city: clinicCityA } = parseCityState(a.address);
+        const { city: clinicCityB } = parseCityState(b.address);
+
+        // Prioriza clínicas da mesma cidade
+        if (
+          clinicCityA.toLowerCase() === regionCity.toLowerCase() &&
+          clinicCityB.toLowerCase() !== regionCity.toLowerCase()
+        ) {
+          return -1;
+        }
+        if (
+          clinicCityA.toLowerCase() !== regionCity.toLowerCase() &&
+          clinicCityB.toLowerCase() === regionCity.toLowerCase()
+        ) {
+          return 1;
+        }
+
+        // Se mesma prioridade, ordena por rating
+        return b.rating - a.rating;
+      })
+      .slice(0, 4);
+  }, [allClinics, regionCity, regionState]);
+
+  // Debug: mostrar informações da região
+  React.useEffect(() => {
+    console.log("Região atual:", {
+      selectedRegion,
+      userRegion,
+      regionLabel,
+      regionCity,
+      regionState,
+      totalClinics: allClinics.length,
+      filteredClinics: topNearby.length,
+    });
+  }, [
+    selectedRegion,
+    userRegion,
+    regionLabel,
+    regionCity,
+    regionState,
+    topNearby.length,
+  ]);
 
   return (
     <>
@@ -202,12 +310,12 @@ const HomePage = ({
               <SearchBar
                 onSearch={handleSearch}
                 initialLocation={selectedRegion || ""}
-                onLocationChange={(loc) => setSelectedRegion(loc)}
+                onLocationChange={handleLocationChange}
               />
             </div>
           </header>
 
-          <section className="py-12 md:py-20 -mt-16 relative z-5">
+          <section className="py-20 md:py-20 -mt-16 relative z-5">
             <div className="container mx-auto px-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -216,19 +324,34 @@ const HomePage = ({
                 transition={{ duration: 0.5 }}
                 className="text-center mb-12"
               >
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
                   Clínicas mais bem avaliadas perto de você
                 </h2>
-                <p className="mt-2 text-lg text-gray-600">
+                <p className="mt-2 text-base sm:text-lg text-gray-600">
                   {regionCity
-                    ? `Baseado em ${regionCity} e região`
+                    ? `Encontradas ${
+                        topNearby.length
+                      } clínicas em ${regionCity}${
+                        regionState ? `, ${regionState}` : ""
+                      }`
+                    : selectedRegion === null
+                    ? "Clínicas mais bem avaliadas próximas a você"
                     : "Baseado na sua região"}
                 </p>
               </motion.div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {topNearby.map((clinic, index) => (
-                  <ClinicCard key={clinic.id} clinic={clinic} index={index} />
-                ))}
+
+              {/* Container responsivo para mobile */}
+              <div className="overflow-hidden">
+                <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 sm:pb-6 scrollbar-hide snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 sm:overflow-visible sm:snap-none">
+                  {topNearby.map((clinic, index) => (
+                    <div
+                      key={clinic.id}
+                      className="w-[280px] sm:w-auto shrink-0 snap-start sm:shrink sm:snap-none"
+                    >
+                      <ClinicCard clinic={clinic} index={index} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </section>
